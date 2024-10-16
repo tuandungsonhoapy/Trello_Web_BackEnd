@@ -1,0 +1,13 @@
+{
+  "name": "trello-web-backend",
+  "version": "1.0.0",
+  "description": "tddev",
+  "main": "src/server.js",
+  "author": "tddev",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}
