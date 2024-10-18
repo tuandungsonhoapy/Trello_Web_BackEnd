@@ -1,29 +1,37 @@
+/* eslint-disable no-console */
 import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+import { connectDB, closeDB } from '~/config/mongodb'
+import exitHook from 'async-exit-hook'
+import { env } from '~/config/environment'
 
-const app = express()
+const START_SERVER = () => {
+  const app = express()
 
-const hostname = 'localhost'
-const port = 8080
+  app.get('/', async (req, res) => {
+    res.end('<h1>Hello World!</h1><hr>')
+  })
 
-app.get('/', (req, res) => {
-  console.log(
-    mapOrder(
-      [
-        { id: 'id-1', name: 'One' },
-        { id: 'id-2', name: 'Two' },
-        { id: 'id-3', name: 'Three' },
-        { id: 'id-4', name: 'Four' },
-        { id: 'id-5', name: 'Five' }
-      ],
-      ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-      'id'
-    )
-  )
-  res.end('<h1>Hello World!</h1><hr>')
-})
+  app.listen(env.APP_PORT, env.APP_HOST, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server is running at http://${env.APP_HOST}:${env.APP_PORT}/`)
+  })
 
-app.listen(port, hostname, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server is running at http://${hostname}:${port}/`)
-})
+  // * Thực hiện cleanup khi server bị tắt
+  exitHook(() => {
+    process.stdin.resume()
+    console.log('Cleaning up...')
+    closeDB() // Close the database connection
+    console.log('Cleanup complete.')
+  })
+}
+
+;(async () => {
+  try {
+    await connectDB()
+    console.log('Connected to MongoDB successfully!')
+    START_SERVER()
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error)
+    process.exit(0)
+  }
+})()
