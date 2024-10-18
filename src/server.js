@@ -4,6 +4,7 @@ import { connectDB, closeDB } from '~/config/mongodb'
 import exitHook from 'async-exit-hook'
 import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
+import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 
 const START_SERVER = () => {
   const app = express()
@@ -11,6 +12,9 @@ const START_SERVER = () => {
   app.use(express.json())
 
   app.use('/api/v1', APIs_V1)
+
+  // * Error handling middleware
+  app.use(errorHandlingMiddleware)
 
   app.listen(env.APP_PORT, env.APP_HOST, () => {
     // eslint-disable-next-line no-console
@@ -21,7 +25,6 @@ const START_SERVER = () => {
 
   // * Thực hiện cleanup khi server bị tắt
   exitHook(() => {
-    process.stdin.resume()
     console.log('Cleaning up...')
     closeDB() // Close the database connection
     console.log('Cleanup complete.')
