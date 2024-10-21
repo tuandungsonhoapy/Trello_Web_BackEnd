@@ -14,4 +14,16 @@ router
   })
   .post(boardValidation.createBoard, boardController.createBoard)
 
+router
+  .route('/move-card')
+  .put(
+    boardValidation.moveCardToAnotherColumn,
+    boardController.moveCardToAnotherColumn
+  )
+
+router
+  .route('/:id')
+  .get(boardController.getDetails)
+  .put(boardValidation.updateBoard, boardController.updateBoard)
+
 export const boardRoute = router
