@@ -20,12 +20,19 @@ const START_SERVER = () => {
   // * Error handling middleware
   app.use(errorHandlingMiddleware)
 
-  app.listen(env.APP_PORT, env.APP_HOST, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server is running at http://${env.APP_HOST}:${env.APP_PORT}/api/v1`
-    )
-  })
+  if (env.BUILD_MODE === 'production') {
+    app.listen(process.env.PORT, () => {
+      // eslint-disable-next-line no-console
+      console.log(`Server is running at port ${process.env.PORT}/api/v1`)
+    })
+  } else {
+    app.listen(env.APP_PORT, env.APP_HOST, () => {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Server is running at http://${env.APP_HOST}:${env.APP_PORT}/api/v1`
+      )
+    })
+  }
 
   // * Thực hiện cleanup khi server bị tắt
   exitHook(() => {
