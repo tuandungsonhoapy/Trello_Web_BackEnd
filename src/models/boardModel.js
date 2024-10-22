@@ -134,6 +134,23 @@ const updateBoard = async (id, data) => {
   }
 }
 
+const pullColumnOrderIds = async (column) => {
+  try {
+    return await getDB()
+      .collection(BOARD_COLLECTION_NAME)
+      .updateOne(
+        { _id: ObjectId.createFromHexString(column.boardId.toString()) },
+        {
+          $pull: {
+            columnOrderIds: ObjectId.createFromHexString(column._id.toString())
+          }
+        }
+      )
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -141,5 +158,6 @@ export const boardModel = {
   findOneById,
   getDetails,
   pushColumnOrderIds,
-  updateBoard
+  updateBoard,
+  pullColumnOrderIds
 }

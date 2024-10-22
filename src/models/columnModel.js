@@ -105,11 +105,36 @@ const updateColumn = async (id, data) => {
   }
 }
 
+const deleteOneById = async (id) => {
+  try {
+    return await getDB()
+      .collection(COLUMN_COLLECTION_NAME)
+      .deleteOne({ _id: ObjectId.createFromHexString(id.toString()) })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const pullCardOrderIds = async (card) => {
+  return await getDB()
+    .collection(COLUMN_COLLECTION_NAME)
+    .updateOne(
+      { _id: ObjectId.createFromHexString(card.columnId.toString()) },
+      {
+        $pull: {
+          cardOrderIds: ObjectId.createFromHexString(card._id.toString())
+        }
+      }
+    )
+}
+
 export const columnModel = {
   COLUMN_COLLECTION_NAME,
   COLUMN_COLLECTION_SCHEMA,
   createColumn,
   findOneById,
   pushCardOrderIds,
-  updateColumn
+  updateColumn,
+  deleteOneById,
+  pullCardOrderIds
 }
