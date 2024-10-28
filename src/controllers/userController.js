@@ -82,10 +82,23 @@ const refreshToken = async (req, res, next) => {
   }
 }
 
+const updateUser = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+    const userAvatar = req.file
+    const result = await userService.updateUser(userId, req.body, userAvatar)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   createUser,
   verifyAccount,
   login,
   logout,
-  refreshToken
+  refreshToken,
+  updateUser
 }

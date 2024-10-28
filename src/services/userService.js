@@ -8,6 +8,7 @@ import { WEB_DOMAIN } from '~/utils/constants'
 import { BrevoProvider } from '~/providers/BrevoProvider'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
+import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 
 const createUser = async (data) => {
   // * Kiểm tra xem email đã tồn tại chưa
@@ -143,9 +144,50 @@ const refreshToken = async (refreshToken) => {
   }
 }
 
+const updateUser = async (userId, data, userAvatar) => {
+  const user = await userModel.findOneById(userId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  }
+  if (!user.isActive) {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      'Your account is not activated!'
+    )
+  }
+
+  if (data.current_password && data.new_password) {
+    if (!bcryptjs.compareSync(data.current_password, user.password)) {
+      throw new ApiError(
+        StatusCodes.NOT_ACCEPTABLE,
+        'Current password is incorrect!'
+      )
+    }
+    return pickUser(
+      await userModel.updateUser(userId, {
+        password: bcryptjs.hashSync(data.new_password, 10)
+      })
+    )
+  } else if (userAvatar) {
+    const uploadResult = await CloudinaryProvider.streamUpload(
+      userAvatar.buffer,
+      'trelloUsers'
+    )
+
+    return pickUser(
+      await userModel.updateUser(userId, {
+        avatar: uploadResult.secure_url
+      })
+    )
+  } else {
+    return pickUser(await userModel.updateUser(userId, data))
+  }
+}
+
 export const userService = {
   createUser,
   verifyAccount,
   login,
-  refreshToken
+  refreshToken,
+  updateUser
 }

@@ -57,8 +57,36 @@ const login = async (req, res, next) => {
   }
 }
 
+const updateUser = async (req, res, next) => {
+  const validationCondition = Joi.object({
+    displayName: Joi.string().trim().strict().min(3).max(50),
+    current_password: Joi.string()
+      .min(6)
+      .trim()
+      .strict()
+      .message('Current password is required and at least 6 characters!'),
+    new_password: Joi.string()
+      .min(6)
+      .trim()
+      .strict()
+      .message('New password is required and at least 6 characters!')
+  })
+
+  try {
+    await validationCondition.validateAsync(req.body, {
+      abortEarly: false,
+      allowUnknown: true
+    })
+
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, error.message))
+  }
+}
+
 export const userValidation = {
   createUser,
   verifyAccount,
-  login
+  login,
+  updateUser
 }
