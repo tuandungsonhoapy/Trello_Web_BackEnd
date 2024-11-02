@@ -87,6 +87,8 @@ const findOneByEmail = async (email) => {
 }
 
 export const userModel = {
+  USER_COLLECTION_NAME,
+  USER_COLLECTION_SCHEMA,
   createUser,
   findOneById,
   updateUser,

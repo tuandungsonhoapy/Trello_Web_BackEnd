@@ -29,8 +29,7 @@ const createCard = async (req, res, next) => {
 const updateCard = async (req, res, next) => {
   const validationCondition = Joi.object({
     title: Joi.string().min(3).max(100).trim().strict(),
-    description: Joi.string().optional(),
-    cover: Joi.string().optional().trim().strict()
+    description: Joi.string().optional()
   })
 
   try {

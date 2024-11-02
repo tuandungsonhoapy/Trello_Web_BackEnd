@@ -3,7 +3,7 @@ import { boardService } from '~/services/boardService'
 
 const createBoard = async (req, res, next) => {
   try {
-    const result = await boardService.createBoard(req.body)
+    const result = await boardService.createBoard(req.jwtDecoded._id, req.body)
 
     res.status(StatusCodes.CREATED).json(result)
   } catch (error) {
@@ -14,7 +14,8 @@ const createBoard = async (req, res, next) => {
 const getDetails = async (req, res, next) => {
   try {
     const { id } = req.params
-    const result = await boardService.getDetails(id)
+
+    const result = await boardService.getDetails(req.jwtDecoded._id, id)
 
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
@@ -43,9 +44,24 @@ const moveCardToAnotherColumn = async (req, res, next) => {
   }
 }
 
+const getBoards = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+
+    const { page, limit } = req.query
+
+    const result = await boardService.getBoards(userId, page, limit)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const boardController = {
   createBoard,
   getDetails,
   updateBoard,
-  moveCardToAnotherColumn
+  moveCardToAnotherColumn,
+  getBoards
 }

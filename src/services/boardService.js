@@ -5,20 +5,21 @@ import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
+import { DEFAULT_LIMIT_PER_PAGE, DEFAULT_PAGE } from '~/utils/constants'
 
-const createBoard = async (data) => {
+const createBoard = async (userId, data) => {
   const newBoard = {
     ...data,
     slug: slugify(data.title)
   }
 
-  const result = await boardModel.createBoard(newBoard)
+  const result = await boardModel.createBoard(userId, newBoard)
 
   return await boardModel.findOneById(result.insertedId)
 }
 
-const getDetails = async (id) => {
-  const result = cloneDeep(await boardModel.getDetails(id))
+const getDetails = async (userId, id) => {
+  const result = cloneDeep(await boardModel.getDetails(userId, id))
 
   if (!result) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
@@ -75,9 +76,20 @@ const moveCardToAnotherColumn = async (data) => {
   }
 }
 
+const getBoards = async (userId, page, limit) => {
+  const result = await boardModel.getBoards(
+    userId,
+    parseInt(page || DEFAULT_PAGE, 10),
+    parseInt(limit || DEFAULT_LIMIT_PER_PAGE, 10)
+  )
+
+  return result
+}
+
 export const boardService = {
   createBoard,
   getDetails,
   updateBoard,
-  moveCardToAnotherColumn
+  moveCardToAnotherColumn,
+  getBoards
 }

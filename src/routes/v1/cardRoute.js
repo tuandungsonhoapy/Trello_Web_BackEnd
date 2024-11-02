@@ -3,6 +3,7 @@ import express from 'express'
 import { cardValidation } from '~/validations/cardValidation'
 import { cardController } from '~/controllers/cardController'
 import { authMiddleware } from '~/middlewares/authMiddleware'
+import { multerMiddleware } from '~/middlewares/multerMiddleware'
 
 const router = express.Router()
 
@@ -18,6 +19,7 @@ router
   .route('/:id')
   .put(
     authMiddleware.isAuthorized,
+    multerMiddleware.upload.single('cardCover'),
     cardValidation.updateCard,
     cardController.updateCard
   )

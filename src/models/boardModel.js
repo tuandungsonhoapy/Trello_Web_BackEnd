@@ -5,14 +5,24 @@ import { getDB } from '~/config/mongodb'
 import { BOARD_TYPES } from '~/utils/constants'
 import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
+import { skipPageNumber } from '~/utils/algorithms'
+import { userModel } from '~/models/userModel'
 
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().required().min(3).max(100).trim().strict(),
   slug: Joi.string().required().min(3).trim().strict(),
   description: Joi.string().required().max(255).trim().strict(),
-  type: Joi.string().valid(BOARD_TYPES.PUBLIC, BOARD_TYPES.PRIVATE).required(),
+  type: Joi.string()
+    .valid(...Object.values(BOARD_TYPES))
+    .required(),
   columnOrderIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  ownerIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  memberIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
   createdAt: Joi.date().timestamp('javascript').default(Date.now()),
@@ -28,13 +38,16 @@ const validateData = async (data) => {
   })
 }
 
-const createBoard = async (data) => {
+const createBoard = async (userId, data) => {
   try {
     const validatedData = await validateData(data)
 
     return await getDB()
       .collection(BOARD_COLLECTION_NAME)
-      .insertOne(validatedData)
+      .insertOne({
+        ...validatedData,
+        ownerIds: [ObjectId.createFromHexString(userId.toString())]
+      })
   } catch (error) {
     throw new Error(error)
   }
@@ -50,18 +63,34 @@ const findOneById = async (id) => {
   }
 }
 
-const getDetails = async (id) => {
+const getDetails = async (userId, id) => {
   try {
+    const queryConditions = [
+      { _id: ObjectId.createFromHexString(id.toString()) },
+      { _destroy: false },
+      {
+        $or: [
+          {
+            ownerIds: {
+              $all: [ObjectId.createFromHexString(userId.toString())]
+            }
+          },
+          {
+            memberIds: {
+              $all: [ObjectId.createFromHexString(userId.toString())]
+            }
+          }
+        ]
+      }
+    ]
+
     return (
       (
         await getDB()
           .collection(BOARD_COLLECTION_NAME)
           .aggregate([
             {
-              $match: {
-                _id: ObjectId.createFromHexString(id.toString()),
-                _destroy: false
-              }
+              $match: { $and: queryConditions }
             },
             {
               $lookup: {
@@ -77,6 +106,24 @@ const getDetails = async (id) => {
                 localField: '_id',
                 foreignField: 'boardId',
                 as: 'cards'
+              }
+            },
+            {
+              $lookup: {
+                from: userModel.USER_COLLECTION_NAME,
+                localField: 'ownerIds',
+                foreignField: '_id',
+                as: 'owners',
+                pipeline: [{ $project: { password: 0, verifyToken: 0 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: userModel.USER_COLLECTION_NAME,
+                localField: 'memberIds',
+                foreignField: '_id',
+                as: 'members',
+                pipeline: [{ $project: { password: 0, verifyToken: 0 } }]
               }
             }
           ])
@@ -151,6 +198,59 @@ const pullColumnOrderIds = async (column) => {
   }
 }
 
+const getBoards = async (userId, page, limit) => {
+  try {
+    const queryConditions = [
+      { _destroy: false },
+      {
+        $or: [
+          {
+            ownerIds: {
+              $all: [ObjectId.createFromHexString(userId.toString())]
+            }
+          },
+          {
+            memberIds: {
+              $all: [ObjectId.createFromHexString(userId.toString())]
+            }
+          }
+        ]
+      }
+    ]
+
+    const response = (
+      await getDB()
+        .collection(BOARD_COLLECTION_NAME)
+        .aggregate(
+          [
+            { $match: { $and: queryConditions } },
+            { $sort: { title: 1 } },
+            {
+              $facet: {
+                // * Thread 1: Query boards
+                queryBoards: [
+                  { $skip: skipPageNumber(page, limit) },
+                  { $limit: limit }
+                ],
+                // * Thread 2: Query number of boards
+                queryNumberBoards: [{ $count: 'numberBoards' }]
+              }
+            }
+          ],
+          { collation: { locale: 'en' } }
+        )
+        .toArray()
+    )[0]
+
+    return {
+      boards: response.queryBoards || [],
+      numberBoards: response.queryNumberBoards[0]?.numberBoards || 0
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -159,5 +259,6 @@ export const boardModel = {
   getDetails,
   pushColumnOrderIds,
   updateBoard,
-  pullColumnOrderIds
+  pullColumnOrderIds,
+  getBoards
 }

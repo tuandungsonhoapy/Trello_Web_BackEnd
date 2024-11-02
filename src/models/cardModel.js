@@ -1,7 +1,12 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { getDB } from '~/config/mongodb'
-import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import {
+  EMAIL_RULE,
+  EMAIL_RULE_MESSAGE,
+  OBJECT_ID_RULE,
+  OBJECT_ID_RULE_MESSAGE
+} from '~/utils/validators'
 
 // Define Collection (name & schema)
 const CARD_COLLECTION_NAME = 'cards'
@@ -17,7 +22,25 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
 
   title: Joi.string().required().min(3).max(100).trim().strict(),
   description: Joi.string().optional(),
-  cover: Joi.string().optional().trim().strict(),
+  cover: Joi.string().trim().strict().default(null),
+  memberIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+
+  comments: Joi.array()
+    .items(
+      Joi.object({
+        userId: Joi.string()
+          .pattern(OBJECT_ID_RULE)
+          .message(OBJECT_ID_RULE_MESSAGE),
+        userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+        userAvatar: Joi.string().trim().strict(),
+        userDisplayName: Joi.string().trim().strict(),
+        content: Joi.string(),
+        commentedAt: Joi.date().timestamp()
+      })
+    )
+    .default([]),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -111,6 +134,37 @@ const deleteOneById = async (id) => {
   }
 }
 
+const unshiftNewComment = async (id, data) => {
+  try {
+    if (data.comments[0].userId) {
+      data.comments[0].userId = ObjectId.createFromHexString(
+        data.comments[0].userId.toString()
+      )
+    }
+
+    return await getDB()
+      .collection(CARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        {
+          _id: ObjectId.createFromHexString(id.toString())
+        },
+        {
+          $push: {
+            comments: {
+              $each: data.comments,
+              $position: 0
+            }
+          }
+        },
+        {
+          returnDocument: 'after'
+        }
+      )
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -118,5 +172,6 @@ export const cardModel = {
   findOneById,
   updateCard,
   deleteManyByColumnId,
-  deleteOneById
+  deleteOneById,
+  unshiftNewComment
 }

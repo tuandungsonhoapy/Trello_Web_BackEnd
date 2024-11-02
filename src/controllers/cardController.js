@@ -13,7 +13,14 @@ const createCard = async (req, res, next) => {
 
 const updateCard = async (req, res, next) => {
   try {
-    const result = await cardService.updateCard(req.params.id, req.body)
+    const cardCover = req.file
+    const user = req.jwtDecoded
+    const result = await cardService.updateCard(
+      req.params.id,
+      req.body,
+      cardCover,
+      user
+    )
 
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
