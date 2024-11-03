@@ -35,6 +35,8 @@ const updateCard = async (id, data, cardCover, user) => {
         }
       ]
     })
+  } else if (data.incomingMember) {
+    return await cardModel.updateMembers(id, data.incomingMember)
   }
 
   return await cardModel.updateCard(id, {

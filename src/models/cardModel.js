@@ -1,6 +1,7 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { getDB } from '~/config/mongodb'
+import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 import {
   EMAIL_RULE,
   EMAIL_RULE_MESSAGE,
@@ -165,6 +166,44 @@ const unshiftNewComment = async (id, data) => {
   }
 }
 
+const updateMembers = async (id, incomingMember) => {
+  try {
+    let updateQuery = {}
+    if (incomingMember.action === CARD_MEMBER_ACTIONS.ADD) {
+      updateQuery = {
+        $push: {
+          memberIds: ObjectId.createFromHexString(
+            incomingMember.userId.toString()
+          )
+        }
+      }
+    }
+    if (incomingMember.action === CARD_MEMBER_ACTIONS.REMOVE) {
+      updateQuery = {
+        $pull: {
+          memberIds: ObjectId.createFromHexString(
+            incomingMember.userId.toString()
+          )
+        }
+      }
+    }
+
+    return await getDB()
+      .collection(CARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        {
+          _id: ObjectId.createFromHexString(id.toString())
+        },
+        updateQuery,
+        {
+          returnDocument: 'after'
+        }
+      )
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -173,5 +212,6 @@ export const cardModel = {
   updateCard,
   deleteManyByColumnId,
   deleteOneById,
-  unshiftNewComment
+  unshiftNewComment,
+  updateMembers
 }

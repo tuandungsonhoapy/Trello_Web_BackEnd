@@ -8,6 +8,9 @@ import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import { corsOptions } from './config/cors'
 import cookieParser from 'cookie-parser'
+import http from 'http'
+import socketIo from 'socket.io'
+import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
 
 const START_SERVER = () => {
   const app = express()
@@ -30,13 +33,20 @@ const START_SERVER = () => {
   // * Error handling middleware
   app.use(errorHandlingMiddleware)
 
+  // * Configuring the app to use socket.io
+  const server = http.createServer(app)
+  const io = socketIo(server, { cors: corsOptions })
+  io.on('connection', (client) => {
+    inviteUserToBoardSocket(client)
+  })
+
   if (env.BUILD_MODE === 'production') {
-    app.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
       // eslint-disable-next-line no-console
       console.log(`Server is running at port ${process.env.PORT}/api/v1`)
     })
   } else {
-    app.listen(env.APP_PORT, env.APP_HOST, () => {
+    server.listen(env.APP_PORT, env.APP_HOST, () => {
       // eslint-disable-next-line no-console
       console.log(
         `Server is running at http://${env.APP_HOST}:${env.APP_PORT}/api/v1`
