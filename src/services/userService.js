@@ -34,7 +34,7 @@ const createUser = async (data) => {
   )
 
   // * Gửi email xác thực tài khoản
-  const verificationLink = `${WEB_DOMAIN}/account/verification?email=${user.email}&token=${user.verifyToken}`
+  const verificationLink = `${WEB_DOMAIN}/verify-account?email=${user.email}&token=${user.verifyToken}`
   const customSubject =
     'Trello Web: Please verify your email address to activate your account!'
   const htmlContent = `
