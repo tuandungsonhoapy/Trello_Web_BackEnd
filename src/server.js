@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser'
 import http from 'http'
 import socketIo from 'socket.io'
 import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
+import { updateCardSocket } from './sockets/updateCardSocket'
 
 const START_SERVER = () => {
   const app = express()
@@ -38,6 +39,7 @@ const START_SERVER = () => {
   const io = socketIo(server, { cors: corsOptions })
   io.on('connection', (client) => {
     inviteUserToBoardSocket(client)
+    updateCardSocket(client)
   })
 
   if (env.BUILD_MODE === 'production') {
