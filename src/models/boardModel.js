@@ -198,7 +198,7 @@ const pullColumnOrderIds = async (column) => {
   }
 }
 
-const getBoards = async (userId, page, limit) => {
+const getBoards = async (userId, page, limit, queryFilters) => {
   try {
     const queryConditions = [
       { _destroy: false },
@@ -217,6 +217,18 @@ const getBoards = async (userId, page, limit) => {
         ]
       }
     ]
+
+    if (queryFilters) {
+      Object.keys(queryFilters).forEach((key) => {
+        if (queryFilters[key]) {
+          queryConditions.push({
+            [key]: {
+              $regex: new RegExp(queryFilters[key], 'i')
+            }
+          })
+        }
+      })
+    }
 
     const response = (
       await getDB()

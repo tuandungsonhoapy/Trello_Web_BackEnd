@@ -76,11 +76,12 @@ const moveCardToAnotherColumn = async (data) => {
   }
 }
 
-const getBoards = async (userId, page, limit) => {
+const getBoards = async (userId, page, limit, queryFilters) => {
   const result = await boardModel.getBoards(
     userId,
     parseInt(page || DEFAULT_PAGE, 10),
-    parseInt(limit || DEFAULT_LIMIT_PER_PAGE, 10)
+    parseInt(limit || DEFAULT_LIMIT_PER_PAGE, 10),
+    queryFilters
   )
 
   return result
