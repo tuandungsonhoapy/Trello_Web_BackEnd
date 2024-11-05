@@ -171,7 +171,7 @@ const updateMembers = async (id, incomingMember) => {
     let updateQuery = {}
     if (incomingMember.action === CARD_MEMBER_ACTIONS.ADD) {
       updateQuery = {
-        $push: {
+        $addToSet: {
           memberIds: ObjectId.createFromHexString(
             incomingMember.userId.toString()
           )
