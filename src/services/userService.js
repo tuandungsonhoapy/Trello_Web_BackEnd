@@ -9,6 +9,11 @@ import { BrevoProvider } from '~/providers/BrevoProvider'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { authenticator } from 'otplib'
+import qrcode from 'qrcode'
+import { userSessionsModel } from '~/models/userSessionsModel'
+
+const SERVICE_NAME = '2FA Trello Web'
 
 const createUser = async (data) => {
   // * Kiểm tra xem email đã tồn tại chưa
@@ -100,6 +105,21 @@ const login = async (data) => {
     )
   }
 
+  let checkUserSession = await userSessionsModel.findByUserIdAndUserAgent(
+    user._id,
+    data.userAgent
+  )
+
+  if (!checkUserSession && user.require_2fa) {
+    const result = await userSessionsModel.createUserSession({
+      userId: user._id.toString(),
+      userAgent: data.userAgent,
+      is_2fa_verified: false
+    })
+
+    checkUserSession = await userSessionsModel.findOneById(result.insertedId)
+  }
+
   // * Tạo access token
   const accessToken = JwtProvider.generateToken(
     { _id: user._id, email: user.email },
@@ -116,7 +136,9 @@ const login = async (data) => {
   return {
     accessToken,
     refreshToken,
-    ...pickUser(user)
+    ...pickUser(user),
+    is_2fa_verified: checkUserSession?.is_2fa_verified,
+    last_login: checkUserSession?.last_login
   }
 }
 
@@ -184,10 +206,144 @@ const updateUser = async (userId, data, userAvatar) => {
   }
 }
 
+const get2faQRCode = async (userId) => {
+  const user = await userModel.findOneById(userId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  }
+
+  let twoFASecretKey = null
+
+  if (!user.secretKey_2fa) {
+    twoFASecretKey = authenticator.generateSecret()
+    await userModel.updateUser(userId, { secretKey_2fa: twoFASecretKey })
+  } else {
+    twoFASecretKey = user.secretKey_2fa
+  }
+
+  // Create OTP token
+  const otpToken = authenticator.keyuri(
+    user.email,
+    SERVICE_NAME,
+    twoFASecretKey
+  )
+
+  // Create QR code
+  const qrCode = await qrcode.toDataURL(otpToken)
+
+  return { qrCode }
+}
+
+const enable2fa = async (userId, data) => {
+  const user = await userModel.findOneById(userId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  }
+  if (!user.secretKey_2fa) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, '2FA is not enabled!')
+  }
+
+  const isValid = authenticator.verify({
+    token: data.otpToken,
+    secret: user.secretKey_2fa
+  })
+
+  if (!isValid) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid OTP token!')
+  }
+
+  const updatedUser = await userModel.updateUser(userId, {
+    require_2fa: true
+  })
+
+  const result = await userSessionsModel.createUserSession({
+    userId: userId.toString(),
+    userAgent: data.userAgent,
+    is_2fa_verified: true
+  })
+
+  const userSession = await userSessionsModel.findOneById(result.insertedId)
+
+  return {
+    ...pickUser(updatedUser),
+    is_2fa_verified: userSession.is_2fa_verified,
+    last_login: userSession.last_login
+  }
+}
+
+const deleteUserSession = async (userId, userAgent) => {
+  return await userSessionsModel.deleteByUserIdAndUserAgent(userId, userAgent)
+}
+
+const verify2fa = async (userId, data) => {
+  const user = await userModel.findOneById(userId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  }
+  if (!user.secretKey_2fa) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, '2FA is not enabled!')
+  }
+
+  const isValid = authenticator.verify({
+    token: data.otpToken,
+    secret: user.secretKey_2fa
+  })
+
+  if (!isValid) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid OTP token!')
+  }
+
+  const updatedUserSession = await userSessionsModel.update(
+    user._id,
+    data.userAgent,
+    {
+      is_2fa_verified: true
+    }
+  )
+
+  return {
+    ...pickUser(user),
+    is_2fa_verified: updatedUserSession.is_2fa_verified,
+    last_login: updatedUserSession.last_login
+  }
+}
+
+const disable2fa = async (userId, data) => {
+  const user = await userModel.findOneById(userId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  }
+  if (!user.secretKey_2fa) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, '2FA is not enabled!')
+  }
+
+  const isValid = authenticator.verify({
+    token: data.otpToken,
+    secret: user.secretKey_2fa
+  })
+
+  if (!isValid) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid OTP token!')
+  }
+
+  await userSessionsModel.deleteByUserIdAndUserAgent(userId, data.userAgent)
+
+  const updatedUser = await userModel.updateUser(userId, {
+    require_2fa: false
+  })
+
+  return pickUser(updatedUser)
+}
+
 export const userService = {
   createUser,
   verifyAccount,
   login,
   refreshToken,
-  updateUser
+  updateUser,
+  get2faQRCode,
+  enable2fa,
+  deleteUserSession,
+  verify2fa,
+  disable2fa
 }

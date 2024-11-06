@@ -25,7 +25,10 @@ const verifyAccount = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const result = await userService.login(req.body)
+    const result = await userService.login({
+      ...req.body,
+      userAgent: req.headers['user-agent']
+    })
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
@@ -49,6 +52,11 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    await userService.deleteUserSession(
+      req.jwtDecoded._id,
+      req.headers['user-agent']
+    )
+
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
 
@@ -94,11 +102,64 @@ const updateUser = async (req, res, next) => {
   }
 }
 
+const get2faQRCode = async (req, res, next) => {
+  try {
+    const result = await userService.get2faQRCode(req.jwtDecoded._id)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const enable2fa = async (req, res, next) => {
+  try {
+    const result = await userService.enable2fa(req.jwtDecoded._id, {
+      ...req.body,
+      userAgent: req.headers['user-agent']
+    })
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const verify2fa = async (req, res, next) => {
+  try {
+    const result = await userService.verify2fa(req.jwtDecoded._id, {
+      ...req.body,
+      userAgent: req.headers['user-agent']
+    })
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const disable2fa = async (req, res, next) => {
+  try {
+    const result = await userService.disable2fa(req.jwtDecoded._id, {
+      ...req.body,
+      userAgent: req.headers['user-agent']
+    })
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   createUser,
   verifyAccount,
   login,
   logout,
   refreshToken,
-  updateUser
+  updateUser,
+  get2faQRCode,
+  enable2fa,
+  verify2fa,
+  disable2fa
 }

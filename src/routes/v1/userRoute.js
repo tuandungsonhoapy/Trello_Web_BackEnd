@@ -16,7 +16,9 @@ router
 
 router.route('/login').post(userValidation.login, userController.login)
 
-router.route('/logout').delete(userController.logout)
+router
+  .route('/logout')
+  .delete(authMiddleware.isAuthorized, userController.logout)
 
 router.route('/refresh-token').get(userController.refreshToken)
 
@@ -28,5 +30,21 @@ router
     userValidation.updateUser,
     userController.updateUser
   )
+
+router
+  .route('/get-2fa-qr-code')
+  .get(authMiddleware.isAuthorized, userController.get2faQRCode)
+
+router
+  .route('/enable-2fa')
+  .post(authMiddleware.isAuthorized, userController.enable2fa)
+
+router
+  .route('/verify-2fa')
+  .put(authMiddleware.isAuthorized, userController.verify2fa)
+
+router
+  .route('/disable-2fa')
+  .put(authMiddleware.isAuthorized, userController.disable2fa)
 
 export const userRoute = router

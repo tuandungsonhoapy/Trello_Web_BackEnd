@@ -24,6 +24,8 @@ export const pickUser = (user) => {
     'username',
     'displayName',
     'avatar',
+    'require_2fa',
+    'is_2fa_verified',
     'role',
     'isActive',
     'createdAt',

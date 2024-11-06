@@ -20,6 +20,8 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
+  require_2fa: Joi.boolean().default(false),
+  secretKey_2fa: Joi.string(),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now()),
   updatedAt: Joi.date().timestamp('javascript').default(null),
