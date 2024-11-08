@@ -281,6 +281,24 @@ const pushMemberIds = async (boardId, userId) => {
   }
 }
 
+const pullMemberIds = async (boardId, userId) => {
+  try {
+    return await getDB()
+      .collection(BOARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: ObjectId.createFromHexString(boardId.toString()) },
+        {
+          $pull: {
+            memberIds: ObjectId.createFromHexString(userId.toString())
+          }
+        },
+        { returnDocument: 'after' }
+      )
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -291,5 +309,6 @@ export const boardModel = {
   updateBoard,
   pullColumnOrderIds,
   getBoards,
-  pushMemberIds
+  pushMemberIds,
+  pullMemberIds
 }

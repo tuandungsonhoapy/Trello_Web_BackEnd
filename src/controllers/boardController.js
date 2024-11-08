@@ -58,10 +58,28 @@ const getBoards = async (req, res, next) => {
   }
 }
 
+const removeUserFromBoard = async (req, res, next) => {
+  try {
+    const { userId: userIdToRemove, boardId } = req.body
+    const userId = req.jwtDecoded._id
+
+    const result = await boardService.removeUserFromBoard(
+      userId,
+      userIdToRemove,
+      boardId
+    )
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const boardController = {
   createBoard,
   getDetails,
   updateBoard,
   moveCardToAnotherColumn,
-  getBoards
+  getBoards,
+  removeUserFromBoard
 }

@@ -87,10 +87,42 @@ const getBoards = async (userId, page, limit, queryFilters) => {
   return result
 }
 
+const removeUserFromBoard = async (userId, userIdToRemove, boardId) => {
+  const board = await boardModel.findOneById(boardId)
+
+  if (!board) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+  }
+
+  if (!board?.ownerIds?.map((id) => id.toString()).includes(userId)) {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      'You are not the owner of this board!'
+    )
+  }
+
+  if (board?.ownerIds?.map((id) => id.toString()).includes(userIdToRemove)) {
+    throw new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      'You cannot remove the owner of the board!'
+    )
+  }
+
+  if (userId === userIdToRemove) {
+    throw new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      'You cannot remove yourself from the board!'
+    )
+  }
+
+  return await boardModel.pullMemberIds(board._id, userIdToRemove)
+}
+
 export const boardService = {
   createBoard,
   getDetails,
   updateBoard,
   moveCardToAnotherColumn,
-  getBoards
+  getBoards,
+  removeUserFromBoard
 }

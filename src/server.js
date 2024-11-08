@@ -12,6 +12,7 @@ import http from 'http'
 import socketIo from 'socket.io'
 import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
 import { updateCardSocket } from './sockets/updateCardSocket'
+import { updateUserGroupSocket } from './sockets/updateBoardSocket'
 
 const START_SERVER = () => {
   const app = express()
@@ -40,16 +41,17 @@ const START_SERVER = () => {
   io.on('connection', (client) => {
     inviteUserToBoardSocket(client)
     updateCardSocket(client)
+    updateUserGroupSocket(client)
   })
 
   if (env.BUILD_MODE === 'production') {
     server.listen(process.env.PORT, () => {
-      // eslint-disable-next-line no-console
+
       console.log(`Server is running at port ${process.env.PORT}/api/v1`)
     })
   } else {
     server.listen(env.APP_PORT, env.APP_HOST, () => {
-      // eslint-disable-next-line no-console
+
       console.log(
         `Server is running at http://${env.APP_HOST}:${env.APP_PORT}/api/v1`
       )

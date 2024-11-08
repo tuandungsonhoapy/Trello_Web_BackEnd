@@ -23,6 +23,14 @@ router
   )
 
 router
+  .route('/remove-user')
+  .put(
+    authMiddleware.isAuthorized,
+    boardValidation.removeUserFromBoard,
+    boardController.removeUserFromBoard
+  )
+
+router
   .route('/:id')
   .get(authMiddleware.isAuthorized, boardController.getDetails)
   .put(
