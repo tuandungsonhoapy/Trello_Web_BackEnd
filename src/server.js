@@ -2,7 +2,6 @@
 import express from 'express'
 import cors from 'cors'
 import { connectDB, closeDB } from '~/config/mongodb'
-import exitHook from 'async-exit-hook'
 import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
@@ -13,6 +12,7 @@ import socketIo from 'socket.io'
 import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
 import { updateCardSocket } from './sockets/updateCardSocket'
 import { updateUserGroupSocket } from './sockets/updateBoardSocket'
+import AsyncExitHook from 'async-exit-hook'
 
 const START_SERVER = () => {
   const app = express()
@@ -46,12 +46,10 @@ const START_SERVER = () => {
 
   if (env.BUILD_MODE === 'production') {
     server.listen(process.env.PORT, () => {
-
       console.log(`Server is running at port ${process.env.PORT}/api/v1`)
     })
   } else {
     server.listen(env.APP_PORT, env.APP_HOST, () => {
-
       console.log(
         `Server is running at http://${env.APP_HOST}:${env.APP_PORT}/api/v1`
       )
@@ -59,7 +57,7 @@ const START_SERVER = () => {
   }
 
   // * Thực hiện cleanup khi server bị tắt
-  exitHook(() => {
+  AsyncExitHook(() => {
     console.log('Cleaning up...')
     closeDB() // Close the database connection
     console.log('Cleanup complete.')

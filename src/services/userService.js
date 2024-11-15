@@ -86,7 +86,7 @@ const login = async (data) => {
 
   if (!user) {
     throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
+      StatusCodes.BAD_REQUEST,
       'Email or password is incorrect!'
     )
   }
@@ -100,7 +100,7 @@ const login = async (data) => {
 
   if (!bcryptjs.compareSync(data.password, user.password)) {
     throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
+      StatusCodes.BAD_REQUEST,
       'Email or password is incorrect!'
     )
   }
@@ -172,10 +172,7 @@ const updateUser = async (userId, data, userAvatar) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
   }
   if (!user.isActive) {
-    throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
-      'Your account is not activated!'
-    )
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Your account is not activated!')
   }
 
   if (data.current_password && data.new_password) {

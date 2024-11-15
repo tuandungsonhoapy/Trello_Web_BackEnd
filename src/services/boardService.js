@@ -96,7 +96,7 @@ const removeUserFromBoard = async (userId, userIdToRemove, boardId) => {
 
   if (!board?.ownerIds?.map((id) => id.toString()).includes(userId)) {
     throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
+      StatusCodes.FORBIDDEN,
       'You are not the owner of this board!'
     )
   }
