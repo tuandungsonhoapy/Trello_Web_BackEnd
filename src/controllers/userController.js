@@ -66,6 +66,17 @@ const logout = async (req, res, next) => {
   }
 }
 
+const handleUnauthenticated = async (req, res, next) => {
+  try {
+    res.clearCookie('accessToken')
+    res.clearCookie('refreshToken')
+
+    res.status(StatusCodes.OK).json({ loggedOut: true })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const refreshToken = async (req, res, next) => {
   try {
     const result = await userService.refreshToken(req.cookies?.refreshToken)
@@ -161,5 +172,6 @@ export const userController = {
   get2faQRCode,
   enable2fa,
   verify2fa,
-  disable2fa
+  disable2fa,
+  handleUnauthenticated
 }

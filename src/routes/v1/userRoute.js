@@ -20,6 +20,10 @@ router
   .route('/logout')
   .delete(authMiddleware.isAuthorized, userController.logout)
 
+router
+  .route('/handleUnauthenticated')
+  .delete(userController.handleUnauthenticated)
+
 router.route('/refresh-token').get(userController.refreshToken)
 
 router
