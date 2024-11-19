@@ -203,6 +203,19 @@ const updateMembers = async (id, incomingMember) => {
     throw new Error(error)
   }
 }
+const findAllCardContainUser = async (boardId, userId) => {
+  try {
+    return await getDB()
+      .collection(CARD_COLLECTION_NAME)
+      .find(
+        { memberIds: ObjectId.createFromHexString(userId.toString()) },
+        { boardId: ObjectId.createFromHexString(boardId.toString()) }
+      )
+      .toArray()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 
 export const cardModel = {
   CARD_COLLECTION_NAME,
@@ -213,5 +226,6 @@ export const cardModel = {
   deleteManyByColumnId,
   deleteOneById,
   unshiftNewComment,
-  updateMembers
+  updateMembers,
+  findAllCardContainUser
 }

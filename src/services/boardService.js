@@ -5,7 +5,11 @@ import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
-import { DEFAULT_LIMIT_PER_PAGE, DEFAULT_PAGE } from '~/utils/constants'
+import {
+  CARD_MEMBER_ACTIONS,
+  DEFAULT_LIMIT_PER_PAGE,
+  DEFAULT_PAGE
+} from '~/utils/constants'
 
 const createBoard = async (userId, data) => {
   const newBoard = {
@@ -115,7 +119,27 @@ const removeUserFromBoard = async (userId, userIdToRemove, boardId) => {
     )
   }
 
-  return await boardModel.pullMemberIds(board._id, userIdToRemove)
+  const allCardContainUser = await cardModel.findAllCardContainUser(
+    board._id,
+    userIdToRemove
+  )
+
+  let listCardToRemoveUser = []
+
+  if (allCardContainUser.length > 0) {
+    allCardContainUser.forEach(async (card) => {
+      const updatedCard = await cardModel.updateMembers(card._id, {
+        userId: userIdToRemove,
+        action: CARD_MEMBER_ACTIONS.REMOVE
+      })
+      listCardToRemoveUser.push(updatedCard)
+    })
+  }
+
+  return {
+    ...(await boardModel.pullMemberIds(board._id, userIdToRemove)),
+    listCardToRemoveUser
+  }
 }
 
 export const boardService = {
