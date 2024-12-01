@@ -21,6 +21,18 @@ router
   .delete(authMiddleware.isAuthorized, userController.logout)
 
 router
+  .route('/')
+  .get(authMiddleware.isAuthorizedAndAdmin, userController.getUsers)
+
+router
+  .route('/deactivate')
+  .put(authMiddleware.isAuthorizedAndAdmin, userController.deactivateUser)
+
+router
+  .route('/activate')
+  .put(authMiddleware.isAuthorizedAndAdmin, userController.activateUser)
+
+router
   .route('/handleUnauthenticated')
   .delete(userController.handleUnauthenticated)
 

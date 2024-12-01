@@ -162,6 +162,45 @@ const disable2fa = async (req, res, next) => {
   }
 }
 
+const getUsers = async (req, res, next) => {
+  try {
+    const { page, limit, q } = req.query
+
+    const result = await userService.getUsers(+page, +limit, q)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const deactivateUser = async (req, res, next) => {
+  try {
+    if (req.jwtDecoded._id === req.body.userId) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'You cannot deactivate yourself!'
+      )
+    }
+
+    const result = await userService.deactivateUser(req.body.userId)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const activateUser = async (req, res, next) => {
+  try {
+    const result = await userService.activateUser(req.body.userId)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   createUser,
   verifyAccount,
@@ -173,5 +212,8 @@ export const userController = {
   enable2fa,
   verify2fa,
   disable2fa,
-  handleUnauthenticated
+  handleUnauthenticated,
+  getUsers,
+  deactivateUser,
+  activateUser
 }

@@ -122,13 +122,13 @@ const login = async (data) => {
 
   // * Tạo access token
   const accessToken = JwtProvider.generateToken(
-    { _id: user._id, email: user.email },
+    { _id: user._id, email: user.email, role: user.role },
     env.ACCESS_TOKEN_SECRET_SIGNATURE,
     env.ACCESS_TOKEN_LIFE
   )
 
   const refreshToken = JwtProvider.generateToken(
-    { _id: user._id, email: user.email },
+    { _id: user._id, email: user.email, role: user.role },
     env.REFRESH_TOKEN_SECRET_SIGNATURE,
     env.REFRESH_TOKEN_LIFE
   )
@@ -151,12 +151,12 @@ const refreshToken = async (refreshToken) => {
 
     return {
       accessToken: JwtProvider.generateToken(
-        { _id: decoded._id, email: decoded.email },
+        { _id: decoded._id, email: decoded.email, role: decoded.role },
         env.ACCESS_TOKEN_SECRET_SIGNATURE,
         env.ACCESS_TOKEN_LIFE
       ),
       refreshToken: JwtProvider.generateToken(
-        { _id: decoded._id, email: decoded.email },
+        { _id: decoded._id, email: decoded.email, role: decoded.role },
         env.REFRESH_TOKEN_SECRET_SIGNATURE,
         env.REFRESH_TOKEN_LIFE
       )
@@ -332,6 +332,30 @@ const disable2fa = async (userId, data) => {
   return pickUser(updatedUser)
 }
 
+const getUsers = async (page, limit, queryFilters) => {
+  const users = await userModel.findAllUsers(page, limit, queryFilters)
+  return {
+    ...users,
+    users: users.users.map((user) => pickUser(user))
+  }
+}
+
+const deactivateUser = async (userId) => {
+  const user = await userModel.updateUser(userId, {
+    isActive: false
+  })
+
+  return pickUser(user)
+}
+
+const activateUser = async (userId) => {
+  const user = await userModel.updateUser(userId, {
+    isActive: true
+  })
+
+  return pickUser(user)
+}
+
 export const userService = {
   createUser,
   verifyAccount,
@@ -342,5 +366,8 @@ export const userService = {
   enable2fa,
   deleteUserSession,
   verify2fa,
-  disable2fa
+  disable2fa,
+  getUsers,
+  deactivateUser,
+  activateUser
 }
